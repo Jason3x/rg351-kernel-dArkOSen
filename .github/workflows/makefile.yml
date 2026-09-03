@@ -1,0 +1,52 @@
+name: Build Kernel
+
+on:
+  push:
+    branches:
+      - rg351
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache toolchain
+        id: cache-toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/toolchains/linaro-6.3.1
+          key: linaro-6.3.1-2017.05-toybrick-develop-11.0
+          
+      - name: Download toolchain
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/toolchains
+          git clone --depth 1 -b develop-11.0 \
+            https://github.com/rockchip-toybrick/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu.git \
+            ~/toolchains/linaro-6.3.1
+
+      - name: Configure kernel
+        run: |
+          export CROSS_COMPILE=~/toolchains/linaro-6.3.1/bin/aarch64-linux-gnu-
+          make ARCH=arm64 CROSS_COMPILE=$CROSS_COMPILE rg351p_tweaked_defconfig
+          make ARCH=arm64 CROSS_COMPILE=$CROSS_COMPILE olddefconfig
+
+      - name: Build kernel
+        run: |
+          make \
+            ARCH=arm64 \
+            CROSS_COMPILE=~/toolchains/linaro-6.3.1/bin/aarch64-linux-gnu- \
+            KBUILD_BUILD_USER=djpar \
+            KBUILD_BUILD_HOST=dArkOSen \
+            -j$(nproc)
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rg351-kernel
+          path: |
+            arch/arm64/boot/Image
