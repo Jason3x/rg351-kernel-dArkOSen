@@ -911,7 +911,10 @@ static int joypad_adc_setup(struct device *dev, struct joypad *joypad)
 			adc->max *= adc->scale;
 			adc->min *= adc->scale;
 		}
-		adc->amux_ch = nbtn;
+					       "amux-channel-mapping",
+					       nbtn, &adc->amux_ch)) {
+			adc->amux_ch = nbtn; /* fall back to default */
+		}
 		adc->invert = false;
 
 		switch (nbtn) {
