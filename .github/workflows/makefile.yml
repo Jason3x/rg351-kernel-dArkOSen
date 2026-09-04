@@ -3,8 +3,9 @@ name: Build Kernel
 on:
   push:
     branches:
-      - rg351
-
+      - '**'
+  workflow_dispatch:
+  
 jobs:
   build:
     runs-on: ubuntu-latest
